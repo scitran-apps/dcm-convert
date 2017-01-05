@@ -1,0 +1,41 @@
+#! /bin/bash
+#
+#
+FLYWHEEL_BASE=/flywheel/v0
+
+# Set paths
+OUTPUT_DIR=$FLYWHEEL_BASE/output
+INPUT_DIR=$FLYWHEEL_BASE/input/dicom
+
+# Look for input and run algorithm
+if [[ -z $@ ]]
+    then
+      input_file=`find $INPUT_DIR -type f -name "*.zip*" | head -1`
+      if [[ -n $input_file ]]
+        then
+            bni=`basename "$input_file"`
+            output_file_base=$OUTPUT_DIR/${bni%_dicom.zip}
+            /flywheel/v0/dcm-convert.py "$input_file" "$output_file_base"
+      else
+            echo "No inputs were provided and $INPUT_DIR has no valid input files!"
+            exit 1
+      fi
+else
+  # Do the work
+  $FLYWHEEL_BASE/dcm_convert.py $@
+fi
+
+# Get a list of the files in the output directory
+outputs=`find $OUTPUT_DIR -type f -name "*"`
+
+# If outputs exist, then go on...
+if [[ -z $outputs ]]
+    then
+        echo "No results found in output directory... Exiting"
+        exit 1
+    else
+        chmod -R 777 $OUTPUT_DIR
+        echo -e "Wrote: `ls $OUTPUT_DIR`"
+fi
+
+exit 0
