@@ -11,18 +11,18 @@
 	"version":  "1.0.0",
 	"config": {
 		"convert_montage": {
-				"description": "Convert selected DICOM archive to MONTAGE format. (Default=1, true)",
-				"default": 1,
+				"description": "Convert selected DICOM archive to MONTAGE format. (Default=true)",
+				"default": true,
 				"type": "boolean"
 			},
 		"convert_nifti": {
-				"description": "Convert selected DICOM archive to to NIfTI format. (Default=0, false)",
-				"default": 0,
+				"description": "Convert selected DICOM archive to to NIfTI format. (Default=false)",
+				"default": false,
 				"type": "boolean"
 			},
 		"convert_png": {
-				"description": "Convert FreeSurfer aseg.stats file to CSV. (Default=0, false)",
-				"default": 0,
+				"description": "Convert FreeSurfer aseg.stats file to CSV. (Default=false)",
+				"default": false,
 				"type": "boolean"
 			}
 	},
