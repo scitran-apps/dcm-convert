@@ -32,5 +32,8 @@
 			"base": "file",
 			"type": { "enum": [ "dicom" ] }
 		}
+	},
+	"custom": {
+		"docker-image": "scitran/dcm-convert:v1.0.0"
 	}
 }
