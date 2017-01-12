@@ -21,7 +21,7 @@
 				"type": "boolean"
 			},
 		"convert_png": {
-				"description": "Convert FreeSurfer aseg.stats file to CSV. (Default=false)",
+				"description": "Convert screenshot acquisitions to PNG. (Default=false)",
 				"default": false,
 				"type": "boolean"
 			}
