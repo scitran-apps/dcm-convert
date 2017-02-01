@@ -33,12 +33,23 @@ def dicom_convert(fp, outbase=None):
     # CONFIG: If there is a config file then load that, else load the manifest and read the default values.
     if os.path.exists('/flywheel/v0/config.json'):
         config_file = '/flywheel/v0/config.json'
+        MANIFEST=False
     else:
         config_file = '/flywheel/v0/manifest.json'
+        MANIFEST=True
 
     with open(config_file, 'r') as jsonfile:
         config = json.load(jsonfile)
     config = config.pop('config')
+
+    if MANIFEST:
+        convert_montage = config['convert_montage']['default']
+        convert_nifti = config['convert_nifti']['default']
+        convert_png = config['convert_png']['default']
+    else:
+        convert_montage = config['convert_montage']
+        convert_nifti = config['convert_nifti']
+        convert_png = config['convert_png']
 
 
     # CONVERSION
@@ -49,57 +60,18 @@ def dicom_convert(fp, outbase=None):
     final_results = []
     # create nifti and Montage
     if ds.scan_type != 'screenshot':
-        if config['convert_montage']['default']:
+        if convert_montage:
             log.info('performing non screenshot conversion, montage')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '_montage', filetype='montage', voxel_order='LPS')  # always LPS
-        if config['convert_nifti']['default']:
+        if convert_nifti:
             log.info('performing non screenshot conversion, nifti')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '_nifti', filetype='nifti')  # no reorder
 
     elif ds.scan_type == 'screenshot':
-        if config['convert_png']['default']:
+        if convert_png:
             log.info('performing screenshot conversion, png')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '_png', filetype='png')
 
-
-    # Write metadata file
-    output_files = os.listdir(os.path.dirname(outbase))
-    files = []
-    if len(output_files) > 0:
-        for f in output_files:
-
-            fdict = {}
-            fdict['name'] = f
-
-            if f.endswith('nifti.nii.gz'):
-                ftype = 'nifti'
-
-            elif f.endswith('bvec'):
-                ftype = 'bvec'
-
-            elif f.endswith('bval'):
-                ftype = 'bval'
-
-            elif f.endswith('montage.zip'):
-                ftype = 'montage'
-
-            elif f.endswith('.png'):
-                ftype = 'screenshot'
-
-            else:
-                ftype = 'None'
-
-            fdict['type'] = ftype
-            files.append(fdict)
-
-        metadata = {}
-        metadata['acquisition'] = {}
-        metadata['acquisition']['files'] = files
-
-        with open(os.path.join(os.path.dirname(outbase),'.metadata.json'), 'w') as metafile:
-            json.dump(metadata, metafile)
-    else:
-        log.info('No output files generated.')
     return final_results
 
 if __name__ == '__main__':
