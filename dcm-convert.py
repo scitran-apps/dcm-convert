@@ -62,16 +62,53 @@ def dicom_convert(fp, outbase=None):
     if ds.scan_type != 'screenshot':
         if convert_montage:
             log.info('performing non screenshot conversion, montage')
-            final_results += scidata.write(ds, ds.data, outbase=outbase + '_montage', filetype='montage', voxel_order='LPS')  # always LPS
+            final_results += scidata.write(ds, ds.data, outbase=outbase + '.montage', filetype='montage', voxel_order='LPS')  # always LPS
         if convert_nifti:
             log.info('performing non screenshot conversion, nifti')
-            final_results += scidata.write(ds, ds.data, outbase=outbase + '_nifti', filetype='nifti')  # no reorder
+            final_results += scidata.write(ds, ds.data, outbase=outbase, filetype='nifti')  # no reorder
 
     elif ds.scan_type == 'screenshot':
         if convert_png:
             log.info('performing screenshot conversion, png')
-            final_results += scidata.write(ds, ds.data, outbase=outbase + '_png', filetype='png')
+            final_results += scidata.write(ds, ds.data, outbase=outbase + '.screenshot', filetype='png')
 
+    # Write metadata file
+    output_files = os.listdir(os.path.dirname(outbase))
+    files = []
+    if len(output_files) > 0:
+        for f in output_files:
+
+            fdict = {}
+            fdict['name'] = f
+
+            if f.endswith('.nii.gz'):
+                ftype = 'nifti'
+
+            elif f.endswith('bvec'):
+                ftype = 'bvec'
+
+            elif f.endswith('bval'):
+                ftype = 'bval'
+
+            elif f.endswith('montage.zip'):
+                ftype = 'montage'
+
+            elif f.endswith('.png'):
+                ftype = 'screenshot'
+
+            else:
+                ftype = 'None'
+
+            fdict['type'] = ftype
+            files.append(fdict)
+
+        metadata = {}
+        metadata['acquisition'] = {}
+        metadata['acquisition']['files'] = files
+
+        with open(os.path.join(os.path.dirname(outbase),'.metadata.json'), 'w') as metafile:
+            json.dump(metadata, metafile)
+            
     return final_results
 
 if __name__ == '__main__':
