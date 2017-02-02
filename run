@@ -14,7 +14,7 @@ if [[ -z $@ ]]
       if [[ -n $input_file ]]
         then
             bni=`basename "$input_file"`
-            output_file_base=$OUTPUT_DIR/${bni%_dicom.zip}
+            output_file_base=$OUTPUT_DIR/${bni%.zip}
             /flywheel/v0/dcm-convert.py "$input_file" "$output_file_base"
       else
             echo "No inputs were provided and $INPUT_DIR has no valid input files!"
