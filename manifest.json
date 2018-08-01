@@ -8,7 +8,10 @@
   "source": "https://github.com/scitran-apps/dcm-convert",
   "license": "Apache-2.0",
   "flywheel": "0",
-  "version": "1.2.0",
+  "version": "2.0.0",
+  "custom": {
+    "docker-image": "stanfordcni/cni-dcm-convert:2.0.0"
+  },
   "config": {
     "convert_montage": {
       "description": "Convert DICOM archive to MONTAGE format. (Default=true)",
@@ -46,8 +49,5 @@
         ]
       }
     }
-  },
-  "custom": {
-    "docker-image": "stanfordcni/cni-dcm-convert:1.2.0"
   }
 }
