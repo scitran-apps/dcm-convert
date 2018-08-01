@@ -4,9 +4,11 @@ import os
 import json
 import logging
 import datetime
-logging.basicConfig()
-log = logging.getLogger('dcmConvert')
 import scitran.data as scidata
+
+logging.basicConfig()
+log = logging.getLogger(' [ stanfordcni/cni-dcm-convert ] ')
+log.setLevel(getattr(logging, 'DEBUG'))
 
 
 def _get_dicom_info_from_dicom(zip_file_path):
@@ -55,7 +57,7 @@ def _get_dicom_info_from_dicom(zip_file_path):
     return dicom_info
 
 
-def dicom_convert(fp, classification, modality, outbase=None):
+def dicom_convert(fp, classification, modality, outbase):
     """
     Attempts multiple types of conversion on dicom files.
 
@@ -63,19 +65,7 @@ def dicom_convert(fp, classification, modality, outbase=None):
     Also attempts to create montages of all files.
 
     """
-    if not os.path.exists(fp):
-        print 'could not find %s' % fp
-        print 'checking input directory ...'
-        if os.path.exists(os.path.join('/input', fp)):
-            fp = os.path.join('/input', fp)
-            print 'found %s' % fp
-
-    if not outbase:
-        fn = os.path.basename(fp)
-        outbase = os.path.join('/output', fn[:fn.index('_dicom')])   # take everything before dicom...
-        log.info('setting outbase to %s' % outbase)
-
-
+    import pprint
     # CONFIG: If there is a config file then load that, else load the manifest and read the default values.
     if os.path.exists('/flywheel/v0/config.json'):
         config_file = '/flywheel/v0/config.json'
@@ -99,26 +89,27 @@ def dicom_convert(fp, classification, modality, outbase=None):
 
 
     # CONVERSION
-    log.info('converting dicom file %s' % fp)
+    log.info('Converting dicom file %s...' % fp)
     ds = scidata.parse(fp, filetype='dicom', ignore_json=True, load_data=True)
-    log.info('loaded and parsed')
+    log.info('Loaded and parsed.')
 
     final_results = []
     # create nifti and Montage
     if ds.scan_type != 'screenshot':
         if convert_montage:
-            log.info('performing non screenshot conversion, montage')
+            log.info('Performing montage conversion...')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '.montage', filetype='montage', voxel_order='LPS')  # always LPS
         if convert_nifti:
-            log.info('performing non screenshot conversion, nifti')
+            log.info('Performing NIfTI conversion...')
             final_results += scidata.write(ds, ds.data, outbase=outbase, filetype='nifti')  # no reorder
 
     elif ds.scan_type == 'screenshot':
         if convert_png:
-            log.info('performing screenshot conversion, png')
+            log.info('Performing screenshot conversion to png...')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '.screenshot', filetype='png')
 
-    # Write metadata file
+
+    # METADATA
     output_files = os.listdir(os.path.dirname(outbase))
     files = []
     if len(output_files) > 0:
@@ -127,6 +118,7 @@ def dicom_convert(fp, classification, modality, outbase=None):
             fdict = {}
             fdict['name'] = f
 
+            # Set filetype
             if f.endswith('.nii.gz'):
                 ftype = 'nifti'
             elif f.endswith('bvec'):
@@ -139,13 +131,19 @@ def dicom_convert(fp, classification, modality, outbase=None):
                 ftype = 'screenshot'
             else:
                 ftype = None
+            if ftype:
+                fdict['type'] = ftype
 
-            fdict['type'] = ftype if ftype
-
+            # Set classification and modality
             if classification:
                 fdict['classification'] = classification
+            else:
+                log.info('No classification was passed in! Not setting on outputs.')
             if modality:
                 fdict['modality'] = modality
+            else:
+                log.info('No modality was passed in! Not setting on outputs.')
+
             files.append(fdict)
 
         metadata = {}
@@ -155,18 +153,15 @@ def dicom_convert(fp, classification, modality, outbase=None):
         with open(os.path.join(os.path.dirname(outbase),'.metadata.json'), 'w') as metafile:
             json.dump(metadata, metafile)
 
+    log.info('Metadata output:')
+    pprint.pprint(metadata)
+
     return final_results
 
 if __name__ == '__main__':
     """
     Run dcm-convert on input dicom file
     """
-
-    import os
-    import json
-
-    log.setLevel(getattr(logging, 'DEBUG'))
-    logging.getLogger('[CNI-DCM-CONVERT]  ').setLevel(logging.INFO)
 
     OUTDIR = '/flywheel/v0/output'
     CONFIG_FILE_PATH = '/flywheel/v0/config.json'
@@ -182,15 +177,25 @@ if __name__ == '__main__':
     dicom_file_path = config['inputs']['dicom']['location']['path']
     dicom_file_name = config['inputs']['dicom']['location']['name']
     output_name = config['config']['output_name'] if config['config'].has_key('output_name') else ''
-    classification = config['inputs']['dicom']['object']['classification'] if config['inputs']['dicom']['object'].has_key('classification') else ''
-    modality = config['inputs']['dicom']['object']['classification'] if config['inputs']['dicom']['object'].has_key('modality') else 'MR'
     ignore_series_descrip = config['config']['ignore_series_descrip']
+    config_ojb = config['inputs']['dicom']['object']
 
     # Grab dicom-info from previous classifier RUN
-    dicom_info = config['inputs']['dicom']['object']['info'] if config['inputs']['dicom']['object'].has_key('info') else ''
+    if config_ojb.has_key('classification'):
+        classification = config_ojb['classification']
+    else:
+        log.info('No classification was found in the config.')
+        classification = []
+    if config_ojb.has_key('modality'):
+        modality = config_ojb['modality']
+    else:
+        log.info('No modality was found in the config - setting to MR')
+        modality = 'MR'
+
+    dicom_info = config_ojb['info'] if config_ojb.has_key('info') else ''
 
     # If dicom info is not there, then get it from the archive
-    if not dicom_info:
+    if not dicom_info or not dicom_info.has_key('StudyID') or not dicom_info.has_key('SeriesNumber') or not dicom_info.has_key('SeriesDescription'):
         dicom_info = _get_dicom_info_from_dicom(dicom_file_path)
 
     exam_num = dicom_info['StudyID'] if dicom_info.has_key('StudyID') else ''
@@ -215,15 +220,16 @@ if __name__ == '__main__':
 
     # Prefer the config input, then exam_num_series_num, then input DICOM file name
     if output_name:
-        output_basename = output_name.split('.nii')[0] + '.nii.gz'
+        output_basename = output_name.split('.nii')[0]
     elif exam_num and series_num:
-        output_basename = exam_num + '_' + series_num + '_1.nii.gz' # HACK how do we get the sub-series number?
+        output_basename = str(exam_num) + '_' + str(series_num) + '_1' # HACK how do we get the sub-series number?
     else:
         # Use the input file name, stripping off the zip, dcm, or dicom ext.
         log.debug('Using input filename to generate output_basename.')
-        output_basename = dicom_file_name.split('.zip')[0].split('.dcm')[0].split('.dicom')[0] + '.nii.gz'
-        log.debug(output_basename)
-    output_name = os.path.join(OUTDIR, output_basename)
+        output_basename = dicom_file_name.split('.zip')[0].split('.dcm')[0].split('.dicom')[0]
+
+    output_basename = os.path.join(OUTDIR, output_basename)
+    log.debug('Output base name set to %s' % output_basename)
 
 
     ############################################################################
