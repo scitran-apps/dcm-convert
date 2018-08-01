@@ -55,7 +55,7 @@ def _get_dicom_info_from_dicom(zip_file_path):
     return dicom_info
 
 
-def dicom_convert(fp, outbase=None):
+def dicom_convert(fp, classification, modality, outbase=None):
     """
     Attempts multiple types of conversion on dicom files.
 
@@ -129,23 +129,23 @@ def dicom_convert(fp, outbase=None):
 
             if f.endswith('.nii.gz'):
                 ftype = 'nifti'
-
             elif f.endswith('bvec'):
                 ftype = 'bvec'
-
             elif f.endswith('bval'):
                 ftype = 'bval'
-
             elif f.endswith('montage.zip'):
                 ftype = 'montage'
-
             elif f.endswith('.png'):
                 ftype = 'screenshot'
-
             else:
-                ftype = 'None'
+                ftype = None
 
-            fdict['type'] = ftype
+            fdict['type'] = ftype if ftype
+
+            if classification:
+                fdict['classification'] = classification
+            if modality:
+                fdict['modality'] = modality
             files.append(fdict)
 
         metadata = {}
@@ -161,13 +161,12 @@ if __name__ == '__main__':
     """
     Run dcm-convert on input dicom file
     """
-    import json
-    import os
 
+    import os
+    import json
 
     log.setLevel(getattr(logging, 'DEBUG'))
     logging.getLogger('[CNI-DCM-CONVERT]  ').setLevel(logging.INFO)
-
 
     OUTDIR = '/flywheel/v0/output'
     CONFIG_FILE_PATH = '/flywheel/v0/config.json'
@@ -183,13 +182,14 @@ if __name__ == '__main__':
     dicom_file_path = config['inputs']['dicom']['location']['path']
     dicom_file_name = config['inputs']['dicom']['location']['name']
     output_name = config['config']['output_name'] if config['config'].has_key('output_name') else ''
-    classification = config['inputs']['dicom']['object']['classification']
+    classification = config['inputs']['dicom']['object']['classification'] if config['inputs']['dicom']['object'].has_key('classification') else ''
+    modality = config['inputs']['dicom']['object']['classification'] if config['inputs']['dicom']['object'].has_key('modality') else 'MR'
     ignore_series_descrip = config['config']['ignore_series_descrip']
 
     # Grab dicom-info from previous classifier RUN
     dicom_info = config['inputs']['dicom']['object']['info'] if config['inputs']['dicom']['object'].has_key('info') else ''
 
-    # If it's not there, then get it from the archive
+    # If dicom info is not there, then get it from the archive
     if not dicom_info:
         dicom_info = _get_dicom_info_from_dicom(dicom_file_path)
 
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     if output_name:
         output_basename = output_name.split('.nii')[0] + '.nii.gz'
     elif exam_num and series_num:
-        output_basename = exam_num + '_' + series_num + '_1.nii.gz'
+        output_basename = exam_num + '_' + series_num + '_1.nii.gz' # HACK how do we get the sub-series number?
     else:
         # Use the input file name, stripping off the zip, dcm, or dicom ext.
         log.debug('Using input filename to generate output_basename.')
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     log.info('Job start: %s' % datetime.datetime.utcnow())
 
-    results = dicom_convert(dicom_file_path, output_basename)
+    results = dicom_convert(dicom_file_path, classification, modality, output_basename)
 
     log.info('Job stop: %s' % datetime.datetime.utcnow())
 
