@@ -9,6 +9,52 @@ log = logging.getLogger('dcmConvert')
 import scitran.data as scidata
 
 
+def _get_dicom_info_from_dicom(zip_file_path):
+    """
+    Extract the last file in the zip to /tmp/ and read it
+    """
+    import zipfile
+    import dicom
+    import os
+
+    dicom_info = {}
+    dcm = []
+    if zipfile.is_zipfile(zip_file_path):
+        zip = zipfile.ZipFile(zip_file_path)
+        num_files = len(zip.namelist())
+        for n in range((num_files -1), -1, -1):
+            dcm_path = zip.extract(zip.namelist()[n], '/tmp')
+            if os.path.isfile(dcm_path):
+                try:
+                    log.info('reading %s' % dcm_path)
+                    dcm = dicom.read_file(dcm_path)
+                    # Here we check for the Raw Data Storage SOP Class, if there
+                    # are other DICOM files in the zip then we read the next one,
+                    # if this is the only class of DICOM in the file, we accept
+                    # our fate and move on.
+                    if dcm.get('SOPClassUID') == 'Raw Data Storage' and n != range((num_files -1), -1, -1)[-1]:
+                        continue
+                    else:
+                        break
+                except:
+                    pass
+            else:
+                log.warning('%s does not exist!' % dcm_path)
+    else:
+        log.info('Not a zip. Attempting to read %s directly' % os.path.basename(zip_file_path))
+        dcm = dicom.read_file(zip_file_path)
+
+    if dcm:
+        dicom_info['StudyID'] = dcm.get('StudyID', '')
+        dicom_info['SeriesNumber'] = dcm.get('SeriesNumber', '')
+        dicom_info['SeriesDescription'] = dcm.get('SeriesDescription', '')
+    else:
+        log.warning('DICOM could not be parsed!')
+        return dicom_info
+
+    return dicom_info
+
+
 def dicom_convert(fp, outbase=None):
     """
     Attempts multiple types of conversion on dicom files.
@@ -116,15 +162,20 @@ if __name__ == '__main__':
     Run dcm-convert on input dicom file
     """
     import json
+    import os
+
 
     log.setLevel(getattr(logging, 'DEBUG'))
     logging.getLogger('[CNI-DCM-CONVERT]  ').setLevel(logging.INFO)
 
 
+    OUTDIR = '/flywheel/v0/output'
+    CONFIG_FILE_PATH = '/flywheel/v0/config.json'
+
+
     ############################################################################
     # Grab Config
 
-    CONFIG_FILE_PATH = '/flywheel/v0/config.json'
     with open(CONFIG_FILE_PATH) as config_file:
         config = json.load(config_file)
 
@@ -136,8 +187,12 @@ if __name__ == '__main__':
     ignore_series_descrip = config['config']['ignore_series_descrip']
 
     # Grab dicom-info from previous classifier RUN
-    # TODO (#5) Use pydicom to grab this info if it's not there
-    dicom_info = config['inputs']['dicom']['object']['info']
+    dicom_info = config['inputs']['dicom']['object']['info'] if config['inputs']['dicom']['object'].has_key('info') else ''
+
+    # If it's not there, then get it from the archive
+    if not dicom_info:
+        dicom_info = _get_dicom_info_from_dicom(dicom_file_path)
+
     exam_num = dicom_info['StudyID'] if dicom_info.has_key('StudyID') else ''
     series_num = dicom_info['SeriesNumber'] if dicom_info.has_key('SeriesNumber') else ''
     series_descrip = dicom_info['SeriesDescription'] if dicom_info.has_key('SeriesDescription') else ''
@@ -157,8 +212,6 @@ if __name__ == '__main__':
 
     ############################################################################
     # Set output name
-
-    OUTDIR = '/flywheel/v0/output'
 
     # Prefer the config input, then exam_num_series_num, then input DICOM file name
     if output_name:
