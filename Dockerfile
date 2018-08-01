@@ -35,10 +35,9 @@ ENV FLYWHEEL /flywheel/v0
 RUN mkdir -p ${FLYWHEEL}
 
 # Put the code in place
-COPY run \
-    manifest.json \
-    dcm-convert.py \
-    ${FLYWHEEL}/
+COPY manifest.json ${FLYWHEEL}/
+COPY run ${FLYWHEEL}/run
+RUN chmod +x ${FLYWHEEL}/run
 
 # Set the entrypoint
 ENTRYPOINT ["/flywheel/v0/run"]

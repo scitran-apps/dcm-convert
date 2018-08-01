@@ -108,25 +108,57 @@ def dicom_convert(fp, outbase=None):
 
         with open(os.path.join(os.path.dirname(outbase),'.metadata.json'), 'w') as metafile:
             json.dump(metadata, metafile)
-            
+
     return final_results
 
 if __name__ == '__main__':
+    """
+    Run dcm-convert on input dicom file
+    """
+    import json
 
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument('dcmtgz', help='path to dicom zip')
-    ap.add_argument('outbase', nargs='?', help='outfile name prefix')
-    ap.add_argument('--log_level', help='logging level', default='info')
-    args = ap.parse_args()
+    log.setLevel(getattr(logging, 'DEBUG'))
+    logging.getLogger('[CNI-DCM-CONVERT]  ').setLevel(logging.INFO)
 
-    log.setLevel(getattr(logging, args.log_level.upper()))
-    logging.getLogger('sctran.data').setLevel(logging.INFO)
+    # Grab Config
+    CONFIG_FILE_PATH = '/flywheel/v0/config.json'
+    with open(CONFIG_FILE_PATH) as config_file:
+        config = json.load(config_file)
 
-    log.info('job start: %s' % datetime.datetime.utcnow())
-    results = dicom_convert(args.dcmtgz, args.outbase)
-    log.info('job stop: %s' % datetime.datetime.utcnow())
+    dicom_file_path = config['inputs']['dicom']['location']['path']
+    dicom_file_name = config['inputs']['dicom']['location']['name']
+    output_name = config['config']['output_name'] if config['config'].has_key('output_name') else ''
+    classification = config['inputs']['dicom']['object']['classification']
+    ignore_series_descrip = config['config']['ignore_series_descrip']
+
+    dicom_info = config['inputs']['dicom']['object']['info']
+    exam_num = dicom_info['StudyID'] if dicom_info.has_key('StudyID') else ''
+    series_num = dicom_info['SeriesNumber'] if dicom_info.has_key('SeriesNumber') else ''
+    series_descrip = dicom_info['SeriesDescription'] if dicom_info.has_key('SeriesDescription') else ''
+
+    # Set output name. Prefer the config input, then exam_num_series_num, then
+    # Input file name.
+    OUTDIR = '/flywheel/v0/output'
+    if output_name:
+        output_basename = output_name.split('.nii')[0] + '.nii.gz'
+    elif exam_num and series_num:
+        output_basename = exam_num + '_' + series_num + '_1.nii.gz'
+    else:
+        # Use the input file name, stripping off the zip, dcm, or dicom ext.
+        output_basename = dicom_file_name.split('.zip')[0].split('.dcm')[0].split('.dicom')[0] + '.nii.gz'
+    output_name = os.path.join(OUTDIR, output_basename)
+
+    log.info('Job start: %s' % datetime.datetime.utcnow())
+
+    # RUN the conversion
+    results = dicom_convert(dicom_file_path, output_basename)
+
+    log.info('Job stop: %s' % datetime.datetime.utcnow())
+
+    # Check for resutls
     if results:
         log.info('generated %s' % ', '.join(results))
+        os.sys.exit(0)
     else:
         log.info('Failed.')
+        os.sys.exit(1)
