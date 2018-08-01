@@ -1,4 +1,4 @@
-# scitran/dcm-convert
+# stanfordcni/cni-dcm-convert
 #
 # Use SciTran Data lib to convert raw DICOM data (zip) from Siemens or GE to
 # various formats (montage, nifti, png).
@@ -35,10 +35,9 @@ ENV FLYWHEEL /flywheel/v0
 RUN mkdir -p ${FLYWHEEL}
 
 # Put the code in place
-COPY run \
-    manifest.json \
-    dcm-convert.py \
-    ${FLYWHEEL}/
+COPY manifest.json ${FLYWHEEL}/
+COPY run.py ${FLYWHEEL}/run
+RUN chmod +x ${FLYWHEEL}/run
 
 # Set the entrypoint
 ENTRYPOINT ["/flywheel/v0/run"]
