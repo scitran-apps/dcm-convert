@@ -1,17 +1,14 @@
 {
-  "name": "cni-dcm-convert",
-  "label": "CNI: DCM-CONVERT - DICOM conversion tool",
-  "description": "DCM-CONVERT uses SciTran's data library (https://github.com/scitran/data) to convert raw DICOM data (within a zip archive) to NIfTI, Montage, and PNG (screenshot acquisitions) formats. DCM-CONVERT supports Siemens and GE DICOM data.",
+  "name": "dcm-convert",
+  "label": "SciTran: DCM-CONVERT - DICOM conversion tool",
+  "description": "DCM-CONVERT uses SciTran's data library (https://github.com/scitran/data) to convert raw DICOM data (zip archive) to NIfTI, Montage, and PNG (screenshot acquisitions) formats. DCM-CONVERT supports Siemens and GE DICOM data.",
   "maintainer": "Michael Perry <lmperry@stanford.edu>",
   "author": "Scientific Transparency (RF Dougherty, K Hahn, R Bowen, G Schaefer, LM Perry)",
   "url": "https://github.com/scitran/data",
   "source": "https://github.com/scitran-apps/dcm-convert",
   "license": "Apache-2.0",
   "flywheel": "0",
-  "version": "2.0.0",
-  "custom": {
-    "docker-image": "stanfordcni/cni-dcm-convert:2.0.0"
-  },
+  "version": "1.1.3",
   "config": {
     "convert_montage": {
       "description": "Convert DICOM archive to MONTAGE format. (Default=true)",
@@ -25,18 +22,8 @@
     },
     "convert_png": {
       "description": "Convert screenshot acquisitions to PNG. (Default=false)",
-      "default": true,
-      "type": "boolean"
-    },
-    "ignore_series_descrip": {
-      "description": "By default we do not convert DICOMs which have 'mux' in the series description. This flag forces the reconstruction of those data as well * CAUTION * If the NIfTI file created here will have the same name as the reconstructed MUX file the existing will be overwritten! (Default=false)",
       "default": false,
       "type": "boolean"
-    },
-    "output_name": {
-      "description": "Name to be used for the output NIfTI file. OPTIONAL: By default the gear will use <Study_ID>_<Series_Num>.nii.gz.",
-      "type": "string",
-      "optional": true
     }
   },
   "inputs": {
@@ -49,5 +36,8 @@
         ]
       }
     }
+  },
+  "custom": {
+    "docker-image": "scitran/dcm-convert:v1.1.3"
   }
 }
