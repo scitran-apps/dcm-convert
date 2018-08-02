@@ -5,7 +5,7 @@
   "maintainer": "Michael Perry <lmperry@stanford.edu>",
   "author": "Scientific Transparency (RF Dougherty, K Hahn, R Bowen, G Schaefer, LM Perry)",
   "url": "https://github.com/scitran/data",
-  "source": "https://github.com/scitran-apps/dcm-convert",
+  "source": "https://github.com/cni/cni-dcm-convert",
   "license": "Apache-2.0",
   "flywheel": "0",
   "version": "2.0.1",
