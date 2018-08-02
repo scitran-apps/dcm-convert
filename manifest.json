@@ -8,9 +8,9 @@
   "source": "https://github.com/scitran-apps/dcm-convert",
   "license": "Apache-2.0",
   "flywheel": "0",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "custom": {
-    "docker-image": "stanfordcni/cni-dcm-convert:2.0.0"
+    "docker-image": "stanfordcni/cni-dcm-convert:2.0.1"
   },
   "config": {
     "convert_montage": {
@@ -34,7 +34,7 @@
       "type": "boolean"
     },
     "output_name": {
-      "description": "Name to be used for the output NIfTI file. OPTIONAL: By default the gear will use <Study_ID>_<Series_Num>.nii.gz.",
+      "description": "Name to be used for the output NIfTI file. OPTIONAL: By default the gear will use <Study_ID>_<Series_Num>_<Acq_num>.nii.gz.",
       "type": "string",
       "optional": true
     }
