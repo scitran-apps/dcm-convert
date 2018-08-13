@@ -171,7 +171,7 @@ if __name__ == '__main__':
     dicom_file_path = config['inputs']['dicom']['location']['path']
     dicom_file_name = config['inputs']['dicom']['location']['name']
     output_name = config['config']['output_name'] if config['config'].has_key('output_name') else ''
-    ignore_series_descrip = config['config']['ignore_series_descrip']
+    convert_mux = config['config']['convert_mux']
     config_ojb = config['inputs']['dicom']['object']
 
     # Read a DICOM from the DICOM archive
@@ -193,14 +193,24 @@ if __name__ == '__main__':
     ############################################################################
     # Check series description for 'mux' string
 
-    series_descrip = dcm.get('SeriesDescription', '')
-    if not ignore_series_descrip:
-        if series_descrip:
-            if series_descrip.find('mux') != -1:
-                log.warning('MUX string found in sereis description. Conversion will not continue! Exit(18)')
-                os.sys.exit(18)
-        else:
-            log.warning('Series description could not be checked. Proceeding anyway!')
+    # Determine by pulse sequence
+    if not convert_mux:
+        try:
+            psd = str(dcm[0x019, 0x109c].value)
+            if psd.startswith('muxarcepi'):
+                log.warning(' This dataset was captured using a MUX PSD (%s). Conversion will not continue! Exit(18). If you would like to convert this dataset re-run with convert_mux=true' % psd)
+                do_exit = True
+        except:
+            series_descrip = dcm.get('SeriesDescription', '')
+            if series_descrip:
+                if series_descrip.find('mux') != -1:
+                    log.warning(' MUX string found in sereis description. Conversion will not continue! Exit(18). If you would like to convert this dataset re-run with convert_mux=true')
+                    do_exit = True
+            else:
+                log.warning(' PSD or series description could not be checked. Proceeding!')
+                do_exit = False
+        if do_exit:
+            os.sys.exit(18)
 
 
     ############################################################################
