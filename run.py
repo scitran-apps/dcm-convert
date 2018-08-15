@@ -195,6 +195,7 @@ if __name__ == '__main__':
 
     # Determine by pulse sequence
     if not convert_mux:
+        do_exit = False
         try:
             psd = str(dcm[0x019, 0x109c].value)
             if psd.startswith('muxarcepi'):
@@ -208,7 +209,6 @@ if __name__ == '__main__':
                     do_exit = True
             else:
                 log.warning(' PSD or series description could not be checked. Proceeding!')
-                do_exit = False
         if do_exit:
             os.sys.exit(18)
 
