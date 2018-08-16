@@ -199,18 +199,18 @@ if __name__ == '__main__':
         try:
             psd = str(dcm[0x019, 0x109c].value)
             if psd.startswith('muxarcepi'):
-                log.warning(' This dataset was captured using a MUX PSD (%s). Conversion will not continue! Exit(18). If you would like to convert this dataset re-run with convert_mux=true' % psd)
+                log.info(' This dataset was captured using a MUX PSD (%s). Conversion will not continue! Exit(0). If you would like to convert this dataset re-run with convert_mux=true' % psd)
                 do_exit = True
         except:
             series_descrip = dcm.get('SeriesDescription', '')
             if series_descrip:
                 if series_descrip.find('mux') != -1:
-                    log.warning(' MUX string found in sereis description. Conversion will not continue! Exit(18). If you would like to convert this dataset re-run with convert_mux=true')
+                    log.info(' MUX string found in sereis description. Conversion will not continue! Exit(0). If you would like to convert this dataset re-run with convert_mux=true')
                     do_exit = True
             else:
                 log.warning(' PSD or series description could not be checked. Proceeding!')
         if do_exit:
-            os.sys.exit(18)
+            os.sys.exit(0)
 
 
     ############################################################################
