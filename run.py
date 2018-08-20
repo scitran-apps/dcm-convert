@@ -13,7 +13,7 @@ log.setLevel(getattr(logging, 'DEBUG'))
 
 def _get_dicom_info_from_dicom(zip_file_path):
     """
-    Extract the last file in the zip to /tmp/ and read it
+    Extract the last file in the zip to /tmp/ and parse it
     """
     import zipfile
     import dicom
@@ -65,11 +65,13 @@ def dicom_convert(fp, classification, modality, outbase):
         MANIFEST=False
     else:
         config_file = '/flywheel/v0/manifest.json'
+        log.info('Loading default config from manifest!')
         MANIFEST=True
 
     with open(config_file, 'r') as jsonfile:
         config = json.load(jsonfile)
     config = config.pop('config')
+    pprint.pprint(config)
 
     if MANIFEST:
         convert_montage = config['convert_montage']['default']
@@ -87,7 +89,7 @@ def dicom_convert(fp, classification, modality, outbase):
     log.info(' Loaded and parsed.')
 
     final_results = []
-    # create nifti and Montage
+
     if ds.scan_type != 'screenshot':
         if convert_montage:
             log.info(' Performing montage conversion...')
@@ -100,6 +102,9 @@ def dicom_convert(fp, classification, modality, outbase):
         if convert_png:
             log.info(' Performing screenshot conversion to png...')
             final_results += scidata.write(ds, ds.data, outbase=outbase + '.screenshot', filetype='png')
+        else:
+            log.warning(' Screenshot acquisition detected, but convert_png=False. Nothing to do! Exiting(0)')
+            os.sys.exit(0)
 
 
     # METADATA
@@ -135,7 +140,8 @@ def dicom_convert(fp, classification, modality, outbase):
             if modality:
                 fdict['modality'] = modality
             else:
-                log.info(' No modality was passed in! Not setting on outputs.')
+                log.info(' No modality was passed in! Assuming MR.')
+                fdict['modality'] = 'MR'
 
             files.append(fdict)
 
@@ -146,8 +152,9 @@ def dicom_convert(fp, classification, modality, outbase):
         with open(os.path.join(os.path.dirname(outbase),'.metadata.json'), 'w') as metafile:
             json.dump(metadata, metafile)
 
-    log.debug(' Metadata output:')
-    pprint.pprint(metadata)
+    if metadata:
+        log.debug(' Metadata output:')
+        pprint.pprint(metadata)
 
     return final_results
 
