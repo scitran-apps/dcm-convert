@@ -2,7 +2,7 @@
 #
 # Use SciTran Data lib to convert raw DICOM data (zip) from Siemens or GE to
 # various formats (montage, nifti, png).
-# See http://github.com/scitran/data for source code.
+# See http://github.com/vistalab/scitran-data for source code.
 #
 
 FROM ubuntu-debootstrap:trusty
@@ -25,10 +25,11 @@ RUN pip install \
     numpy==1.9.0 \
     pytz \
     pillow \
-    git+https://github.com/scitran/pydicom.git@0.9.9_value_vr_mismatch \
+    git+https://github.com/vistalab/pydicom.git@0.9.9_value_vr_mismatch \
     git+https://github.com/nipy/nibabel.git@3bc31e9a6191fc54667b3387ed5dfaced46bf755 \
-    git+https://github.com/moloney/dcmstack.git@6d49fe01235c08ae63c76fa2f3943b49c9b9832d \
-    git+https://github.com/scitran/data.git@bad266cbf7d284738bb8f426c7ca8ecc9de50bb5
+    git+https://github.com/moloney/dcmstack.git@6d49fe01235c08ae63c76fa2f3943b49c9b9832d
+
+RUN pip install git+https://github.com/vistalab/scitran-data.git@6723602ce74199e4ff8f098cc16f759559bb85a7
 
 # Make directory for flywheel spec (v0)
 ENV FLYWHEEL /flywheel/v0
